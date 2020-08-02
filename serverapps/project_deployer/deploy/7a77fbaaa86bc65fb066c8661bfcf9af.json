@@ -1,0 +1,10 @@
+{
+     "base_path": "http://www.tamats.com/projects/webglstudio/editor//fileserver/files//",
+     "project_folder": "testfoo2",
+     "scene": "guest/projects/we3d.scene.json",
+     "files": [
+          "guest/prefabs/room.wbin",
+          "guest/prefabs/furniture/mesa.wbin",
+          "guest/prefabs/furniture/silla.wbin"
+     ]
+}

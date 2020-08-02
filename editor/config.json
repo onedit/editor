@@ -1,0 +1,9 @@
+{
+	"version":"0.6",
+	"server":"fileserver/src/",
+	"resources":"fileserver/files/",
+	"proxy":"@/proxy.php?url=",
+	"plugins":"js/plugins",
+	"nocache": false,
+	"scene_url":"scene.json"
+}

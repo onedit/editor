@@ -1,0 +1,748 @@
+
+
+.icon { font-family: Lucida Sans Unicode }
+
+/* 3D Area */
+#visor {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden; /* disable this to check for resize errors */
+	background-color: #111;
+	padding: 0;
+}
+
+/* startup console */
+.startup-console-msg {
+	font-family: Tahoma;
+	margin: 0;
+	padding: 0;
+	margin-left: 10px;
+	color: #55b6b7;
+}
+
+.startup-console-msg.error {
+	color: black;
+	background-color: #FF0000;
+}
+
+#loader-dialog {
+	width: 300px;
+	height: 200px;
+	position: absolute;
+	top: calc( 50% - 150px );
+	left: calc( 50% - 200px );
+	background-color: #111;
+	text-align: center;
+}
+
+#loader-dialog .title {
+	height: 100px;
+}
+
+#loader-dialog .loader {
+	height: 2px;
+	background-color: black;
+}
+
+#loader-dialog .log {
+	padding: 0.5em;
+	height: 96px;
+	overflow: auto;
+	opacity: 0.5;
+	margin-top: 6px ;
+	background-color: black;
+}
+
+
+/* menubar */
+#mainmenubar > ul {
+	padding-top: 4px;
+	padding-left: 64px;
+}
+
+#mainmenubar > ul > li {
+	padding: 4px 20px;
+}
+
+
+body.player #work-area, body.player #main-area  {
+	height: 100%;
+}
+
+/* for the scene tree */
+.item-list {
+	overflow: auto;
+}
+
+.scene-tree {
+	background-color: #111;
+	width: 100%;
+	height: 100%;
+}
+
+
+.scene-tree .litetree {
+	height: calc( 100% - 26px );
+	overflow: auto;
+}
+
+.scene-tree .litetree .ltreeitem {
+	color: #AAA;
+	border-radius: 1px;
+	margin: 1px;
+	font-size:1.2em;
+	padding: 2px;
+	cursor: pointer;
+}
+
+.scene-tree .litetree .ltreeitem:nth-child(even):not(:hover)
+{
+	background-color: rgba(0,0,0,0.5);
+}
+
+
+.scene-tree .litetree .ltreeitem .node-name:hover {
+	color: white;
+}
+
+.scene-tree .litetree .ltreeitem.selected {
+	background-color: rgba(71,49,27,0.5) !important;
+}
+
+.scene-tree .litetree .ltreeitem.selected .node-name {
+    -moz-transition: background-color 0.1s ease 0s, color 0.1s ease 0s;
+	background-color: #8AD;
+	color: white;
+}
+
+.scene-tree .litetree .ltreeitem {
+	/*background: url('../media/tree_lines_16x16.png') no-repeat 10px -2px;*/
+	font-size: 14px;
+	/*
+	padding-left: 30px;
+	margin-left: 0px;
+	*/
+	cursor: pointer;
+	margin-bottom: -4px;
+}
+
+
+
+.scene-tree .nodecontrols {
+	vertical-align: top;
+	width: 20px;
+	display: inline-block;
+	opacity: 0.3;
+}
+
+.scene-tree .nodecontrols:hover {
+	opacity: 1;
+}
+
+.scene-tree .nodecontrols .togglevisible {
+	border-radius: 4px;
+	display: inline-block;
+	vertical-align: top;
+	margin: 2px;
+	margin-top: 4px;
+	margin-bottom: 0;
+	width: 8px;
+	height: 8px;
+	background-color: #555;
+	border: 1px solid rgba(100,100,100,0.5);
+}
+
+.scene-tree .nodecontrols .togglevisible.on {
+	background-color: #5AF;
+}
+
+.opensidepanel-button {
+	color: #AAA;
+    background-color: #444;
+    border-radius: 10px 0px 0 10px;
+    display: block;
+    width: 20px;
+    height: 80px;
+    font-size: 2em;
+    text-align: center;
+    line-height: 80px;
+
+	position: absolute;
+	top: 50%;
+	right: 0;
+	opacity: 0.4;
+	transition: all 0.2s;
+}
+
+.opensidepanel-button:hover {
+	opacity: 1;
+	color: #EEE;
+    background-color: #666;
+	cursor: pointer;
+}
+
+/*
+.scene-tree .litetree .root_node {
+	background: transparent;
+	padding-left: 5px;
+}
+*/
+
+/* for files */
+
+.resources-tree .ltree-level-1 {
+	font-size: 1.4em;
+	background-color: #223 !important;
+	border-radius: 2px;
+	margin-top: 2px;
+}
+
+.resources-tree .ltree-level-1 .incontent {
+	color: #EEE;
+	font-weight: bold;
+}
+
+.resources-tree .ltreeitemtitle {
+	padding: 4px;
+}
+
+.resources-tree .ltreeitem:nth-child(even) {
+	background-color: #111;
+}
+
+.resources-tree .ltreeitem:nth-child(even):hover {
+	background-color: #333;
+}
+
+.resource .extension {
+	opacity: 0.5;
+}
+
+.resource.modified {
+	outline: 1px solid #733;
+}
+
+.file-list-info {
+	color: #4F4F4F;
+	font-size: 30px;
+	margin: 10px;
+}
+
+.file-list-title {
+	background-color: black;
+	height: 24px;
+	overflow: hidden;
+}
+
+.foldername {
+	display: inline-block;
+	margin-left: 8px;
+	margin-top: 4px;
+	font-size: 1.2em;
+	color: #EEE;
+}
+
+.foldername-slash {
+	color: #ABC;
+	padding: 0 3px;
+}
+
+.file-list-block {
+	background-color: black;
+	opacity: 0.8;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.file-list .file-item 
+{
+	transition: all 0.2s;
+}
+
+.file-list .file-item:hover {
+	/*transform: scale(1.1);*/
+	outline: 1px solid #EEE;
+}
+
+.file-list .file-item .info {
+	font-size: 1.4em !important;
+    position: absolute;
+    bottom: 0px;
+    background-color: rgba(0,0,0,0.75);
+    overflow: hidden;
+    text-align: left;
+    padding: 4px;
+}
+
+.file-list .file-item .info .extension {
+	font-size: 0.8em;
+	opacity: 0.5;
+}
+
+
+.file-list-block .info {
+	margin: 20px;
+	font-size: 4em;
+}
+
+#settings-widgets-area .content {
+	padding-left: 20px;
+}
+
+/* Tools inside the work area */
+
+#canvas-tools {
+	position: absolute;
+	top: 50px;
+	left: 10px;
+}
+
+.tool-section {
+	user-select: none;
+	-moz-user-select: none;  
+	-webkit-user-select: none;  
+}
+
+.tool-button {
+	opacity: 0.8;
+	border-radius: 2px;
+	color: #AAA;
+	background-color: #333;
+	min-width: 20px;
+	height: 20px;
+	line-height: 20px;
+	margin-right: 4px;
+	margin-bottom: 4px;
+	cursor:pointer;
+	background-position: center center;
+	background-repeat: no-repeat;
+	text-align: center;
+}
+
+.tool-button.enabled {
+	opacity: 1;
+	background-color: #BBE;
+	color: black;
+}
+
+.tool-button:hover {
+	background-color: #AAF;
+	color: black;
+}
+
+#canvas-tools .tool-section {
+	margin-bottom: 20px;
+}
+
+#canvas-buttons {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+}
+
+#canvas-buttons .tool-section {
+	display: inline-block;
+	margin-right: 20px;
+}
+
+#canvas-buttons .tool-button {
+	display: inline-block;
+}
+
+#canvas-buttons .tool-button.enabled {
+	background-color: #6E9;
+}
+
+#canvas-buttons .tool-button:hover {
+	background-color: #4B3;
+}
+
+
+
+textarea.code {
+	margin: 2px;
+	width: calc(100% - 14px);
+	width: -moz-calc(100% - 12px);
+	width: -webkit-calc(100% - 12px);
+	overflow: auto;
+	padding: 4px;
+	color: #7F7;
+	font-family: "Courier New";
+	border: 0;
+	background-color: black;
+}
+
+.tools {
+	line-height: 2em;
+}
+
+.in-client strong {
+	background-color: #338 !important;
+}
+
+.memory .listbox.empty {
+	background-color: #3A3;
+	margin-right: 1em;
+}
+
+.prefab .listbox.empty {
+	background-color: #53432E !important;
+}
+
+.prefab .listbox {
+	color: #53432E !important;
+}
+
+.prefab .incontent {
+	opacity: 0.8;
+}
+
+
+/* side tabs */
+#worktabs {
+	background-color: #222;
+}
+
+#worktabs .wtab {
+	margin-bottom: 8px;
+}
+
+.wsection.error .wsectiontitle {
+	background-color: #A33 !important;
+}
+
+.wsection.error .wsectioncontent {
+	background-color: #5f3939 !important;
+}
+
+
+.wsectiontitle .options_section {
+	opacity: 0.5;
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+    transition: opacity 0.1s ease 0s;
+    -moz-transition: opacity 0.1s ease 0s;
+}
+
+.wsectiontitle .options_section:hover {
+	opacity: 1;
+}
+
+/* lower panel */
+#visorarea .litesplitbar {
+	background-color: #111;
+}
+
+#lowerpaneltabs .wtabcontent {
+	padding: 0;
+}
+
+#lowerpaneltabs .wtabcontainer {
+	background-color: #222;
+}
+
+#maincanvas {
+	height: calc( 100% - 20px );
+	width: 100%;
+	overflow: hidden;
+}
+
+#statusbar {
+	background-color: #0a0a0a;
+	height: 20px;
+	width: 100%;
+	overflow: hidden;
+	border: 1px solid black;
+}
+
+#statusbar.expanded {
+	border-top: 1px solid white;
+}
+
+#statusbar:not(.expanded)
+{
+	cursor: pointer;
+}
+
+#statusbar .msg {
+	padding-left: 2em;
+	color: #AAA;
+    margin-top: 2px;
+    display: inline-block;
+}
+
+#statusbar .msg.error {
+	color: #e43838;
+}
+
+/* inspector */
+.inspector {
+	
+}
+
+.inspector .icon img {
+	margin-top: 2px;
+}
+
+.inspector .icon[draggable] {
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
+}
+
+.inspector .switch-section-button {
+	cursor: pointer;
+}
+
+.inspector_widget .header {
+	width: 100%;
+	overflow: hidden;
+	background-color: #26292E;
+}
+
+.inspector_widget .header button {
+	background: transparent;
+	border-radius: 0;
+	box-shadow: 0 0 0 transparent;
+	display: inline-block;
+	width: 30px;
+	height: 100%;
+	margin: 0;
+	text-align: center;
+	font-size: 1.6em;
+	color: #444;
+	text-shadow: 0 0 0 transparent;
+	line-height: 10px;
+	vertical-align: top !important;
+}
+
+.inspector_widget .header button:hover {
+	background-color: #444 !important;
+	color: black;
+}
+
+.inspector_widget .header button:focus {
+	outline: 0;
+}
+
+.inspector_widget .header button.active {
+	background: #356A99;
+	color: #DDD;
+}
+
+.inspector_widget .header .title {
+	display: inline-block;
+	width: calc( 100% - 120px );
+	height: 100%;
+	margin: 0;
+	font-size: 1.7em;
+	text-align: left;
+	padding-left: 10px;
+	color: #4F7098;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+
+/* timeline */
+.timeline {
+	background-color: #111;
+	width: 100%;
+	height: 100%;
+}
+
+.keyframe_icon, .bullet_icon {
+	border: 2px solid rgba(0,0,0,0.4);
+	/*box-shadow: 0 0 2px black;*/
+	border-radius: 10px;
+	width: 12px;
+	height: 12px;
+	background-color: #666;
+	display: inline-block;
+	margin-top: 2px;
+	margin-right: 4px;
+    transition: background-color 0.1s ease 0s;
+    -moz-transition: background-color 0.1s ease 0s;
+}
+
+.wsectiontitle .keyframe_icon, .wsectiontitle .bullet_icon {
+	background-color: #333;
+	margin-bottom: -1px;
+	margin-right: 2px;
+	margin-left: 4px;
+}
+
+.keyframe_icon:hover {
+	background-color: #8EA;
+	cursor: pointer;
+}
+
+.bullet_icon:hover {
+	background-color: #A8E;
+	cursor: pointer;
+}
+
+
+/* locks */
+.locked_container {
+	position: relative;
+}
+
+.locked_container .background.edited {
+	background-color: #334;
+}
+
+.locked_container .background.blur {
+    -webkit-filter: blur(2px);
+    -moz-filter: blur(2px);
+    -ms-filter: blur(2px);
+    -o-filter: blur(2px);
+    filter: blur(2px);
+}
+
+.locked_container .foreground {
+	text-align: center;
+	padding: 20px;
+	position: absolute;
+	background-color: rgba(40,40,40,0.8);
+	top:0;
+	left:0;
+	width:100%;
+	height:100%;
+}
+
+.locked_container .foreground button {
+	padding: 10px;
+}
+
+
+/* global */
+
+.big-info-popup {
+	background-color: rgba(0,0,0,0.5);
+	border-radius: 20px;
+	font-size: 80px;
+	color: white;
+	text-align: center;
+	position:absolute;
+	top: 80px;
+	left: 110px;
+	min-width: 300px;
+    transition: all 0.3s ease 0s;
+    -moz-transition: all 0.3s ease 0s;
+}
+
+.alert {
+	background-color: #422;
+	color: #FAA;
+	padding: 5px;
+}
+
+.warning {
+	background-color: #5B5023;
+	color: #E5C348;
+	padding: 5px;
+}
+
+#intro_dialog {
+	cursor: pointer;
+	font-size: 1.5em;
+	color: #999;
+	background: linear-gradient(-45deg, #121212, #303335); 
+}
+
+#intro_dialog .msg {
+	padding: 10px;
+}
+
+#intro_dialog .center {
+	text-align: center;
+}
+
+#intro_dialog .header {
+	font-size: 1.5em;
+	color: #EEE;
+}
+
+.dialog-info-warning {
+	background-color: #596D7E;
+    padding: 2px;
+	margin: 2px;
+    color: #C0D1EA;
+}
+
+.script-context-icon {
+	width: 1em;
+	display: inline-block;
+	height: 1em;
+	background-color: black;
+	opacity: 0.5;
+}
+
+
+/*  PLAYING */
+.playing #worktabs {
+	background-color: #101010;
+}
+
+.playing .litepanel, .playing .litedialog {
+	background: #111;
+}
+
+.playing .inspector {
+	color: #545454;
+}
+
+.playing .inspector .wtitle, .playing .inspector .wsectiontitle
+{
+	color: #545454;
+	background-color: #252525;
+}
+
+.playing .inspector .wsectioncontent  {
+	 background-color: #111;
+}
+
+.playing .inspector .separator  {
+	 border-top-color: #151515;
+	 border-bottom-color: #151515;
+}
+
+.playing .keyframe_icon, .playing .inspector button, .playing .inspector .inputfield, .playing .inspector .color {
+	opacity: 0.5;
+}
+
+.playing .inspector:not(.one_line) .widget.even {
+    background-color: transparent;
+}
+
+
+.code-footer.error {
+	background-color: #621111 !important;
+    color: #FAA;
+}
+
+.link {
+	cursor: pointer;
+}
+
+.prefab-child {
+	background-color: #403934 !important;
+}
+
+.prefab-child .wtitle, .prefab-child .wsectiontitle {
+	background-color: #61483f !important;
+}
+
+.prefab-child .wtitle, .prefab-child .wsectioncontent  {
+    background-color: #4c4037 !important;
+}
+
+.bad { color: #f96a6a; }

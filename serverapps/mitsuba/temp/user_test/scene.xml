@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scene version="0.5.0">
+<integrator type="bdpt">
+		<integer name="shadingSamples" value="64"/>
+		<integer name="maxDepth" value="4"/>
+</integrator>
+<bsdf type="roughdiffuse" id="MAT--f9d3c2-14d-119da3c-1">
+	<srgb name="reflectance" value="#ffffff"/>
+</bsdf>
+<bsdf type="roughdiffuse" id="MAT--f9d3c2-9eeb1-1c32bd6-25">
+	<srgb name="reflectance" value="#ffffff"/>
+</bsdf>
+<bsdf type="roughdiffuse" id="MAT--f9d3c2-a3009-1635ce6-26">
+	<srgb name="reflectance" value="#ffffff"/>
+</bsdf>
+<shape type="obj">
+	<string name="filename" value="@RINS-f9d3c2-94459-1702d5e-13.obj"/>
+	<transform name="toWorld">
+			<matrix value="1,0,0,-56.586124420166016,0,1,0,13.286003112792969,0,0,1,0,0,0,0,1"/>
+		</transform>
+		<ref id="MAT--f9d3c2-14d-119da3c-1"/>
+</shape>
+<shape type="obj">
+	<string name="filename" value="@RINS-f9d3c2-96b38-1a3eb01-18.obj"/>
+	<transform name="toWorld">
+			<matrix value="1,0,0,2.6207847595214844,0,1,0,13.286003112792969,0,0,1,25.6694278717041,0,0,0,1"/>
+		</transform>
+		<ref id="MAT--f9d3c2-14d-119da3c-1"/>
+</shape>
+<shape type="obj">
+	<string name="filename" value="@RINS-f9d3c2-97a1e-13204bf-1d.obj"/>
+	<transform name="toWorld">
+			<matrix value="1,0,0,2.6207847595214844,0,1,0,13.286003112792969,0,0,1,-23.921123504638672,0,0,0,1"/>
+		</transform>
+		<ref id="MAT--f9d3c2-9eeb1-1c32bd6-25"/>
+</shape>
+<shape type="obj">
+	<string name="filename" value="@RINS-f9d3c2-99f61-1c772ee-21.obj"/>
+	<transform name="toWorld">
+			<matrix value="1000,0,0,0,0,1000,0,-0.7923545837402344,0,0,1000,0,0,0,0,1"/>
+		</transform>
+		<ref id="MAT--f9d3c2-a3009-1635ce6-26"/>
+</shape>
+<emitter type="point">
+		<transform name="toWorld">
+			<matrix value="1,0,0,0,0,1,0,12.907928466796875,0,0,1,0,0,0,0,1"/>
+		</transform>
+		<spectrum name="intensity" value="1000,1000,1000"/>
+</emitter>
+<emitter type="constant">
+		<spectrum name="radiance" value="0.20000000298023224,0.20000000298023224,0.20000000298023224"/>
+</emitter>
+<sensor type="perspective">
+		<float name="farClip" value="10000"/>
+		<float name="focusDistance" value="110.65870934376112"/>
+		<float name="fov" value="45"/>
+		<string name="fovAxis" value="x"/>
+		<float name="nearClip" value="0.1"/>
+		<transform name="toWorld">
+			<lookat target="-10.926353454589844,-8.858954429626465,-12.021839141845703" origin="54.416748046875,44.12044143676758,59.872615814208984" up="0,1,0"/>
+		</transform>
+		<sampler type="independent">
+			<integer name="sampleCount" value="64"/>
+		</sampler>
+		<film type="hdrfilm">
+			<integer name="height" value="768"/>
+			<integer name="width" value="1024"/>
+			<rfilter type="gaussian"/>
+		</film>
+</sensor>
+</scene>
