@@ -2,10 +2,9 @@ cd "$(dirname "$0")"
 echo "LITEGL"
 ../../litegl/utils/pack.sh
 cp -v ../../litegl/build/* ../editor/js/extra
-echo "LITESCENE"
-../../litescene/utils/pack.sh
-cp -v ../../litescene/build/* ../editor/js/extra
-cp -v ../../litescene/data/shaders.xml ../editor/data
+echo "ONECORE"
+../../onecore/utils/pack.sh
+cp -v ../../onecore/build/* ../editor/js/extra
 echo "LITEGUI"
 ../../litegui/utils/pack.sh
 cp -v ../../litegui/build/*.js ../editor/js/extra
