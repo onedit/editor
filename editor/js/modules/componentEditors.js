@@ -657,11 +657,11 @@ function computeSharedInitialString(array)
 	return first.length;
 }
 
-LS.Components.MorphDeformer["@inspector"] = function(component, inspector)
+LS.Components.MorphDeformer["@inspector"] = function( component, inspector )
 {
 	inspector.widgets_per_row = 3;
-	inspector.addCombo("mode",component.mode, { name_width: 60, values: LS.Components.MorphDeformer["@mode"].values, width:"40%", callback: function (value) { 
-		component.mode = value; 
+	inspector.addCombo( "mode", component.mode, { name_width: 60, values: LS.Components.MorphDeformer["@mode"].values, width:"40%", callback: function (value) { 
+		component.mode = value;
 	}});
 
 	inspector.addCheckbox("Use Sliders", LS.Components.MorphDeformer.use_sliders, { name_width: 80, width:"30%", callback: function(v){ 

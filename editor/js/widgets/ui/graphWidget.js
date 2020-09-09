@@ -622,11 +622,9 @@ LiteGraph.addNodeMethod( "inspect", function( inspector )
 	inspector.addVector2("Size", graphnode.size, { name_width: 100, callback: function(v) { graphnode.size[0] = v[0]; graphnode.size[1] = v[1];  }} );
 
 	var modes = { "Always": LiteGraph.ALWAYS, "On Event": LiteGraph.ON_Event, "On Trigger": LiteGraph.ON_TRIGGER, "Never": LiteGraph.NEVER };
-	var reversed_modes = {};
-	for(var i in modes)
-		reversed_modes[ modes[i] ] = i;
-
-	inspector.addCombo("Mode", reversed_modes[ graphnode.mode ], { name_width: 100, values: modes, callback: function(v) { graphnode.mode = v; }});
+	inspector.addCombo("Mode", graphnode.mode, { name_width: 100, values: modes, callback: function(v) { 
+		graphnode.mode = v;
+	}});
 	inspector.addSeparator();
 
 	var widgets_info = graphnode.constructor.widgets_info || graphnode.widgets_info;
