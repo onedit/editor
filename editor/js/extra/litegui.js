@@ -9975,7 +9975,7 @@ Inspector.prototype.addArray = function( name, value, options )
 
 	//length widget
 	this.widgets_per_row = 3;
-	this.addInfo(name,null,{ name_width: "100%", width: "100% - 160px"});
+	this.addInfo( name,null,{ name_width: "100%", width: "100% - 160px", pretitle: options.pretitle });
 	var length_widget = this.addString( "length", value.length || "0", { width: 100, callback: function(v){ 
 		var v = parseInt(v);
 		if(value < 0)

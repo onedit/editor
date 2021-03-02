@@ -54783,7 +54783,7 @@ global.Collada = _collada = {
 			if(!data)
 				callback( null );
 			else
-				callback( Collada.parse( data ) );
+				callback( Collada.parse( data ), url );
 		});
 	},
 
@@ -57759,7 +57759,7 @@ function request(url, callback)
 		if(callback)
 			callback(this.response);
 	};
-	if(url.indexOf("://") == -1)
+	if(url.indexOf("://") == -1 && Collada.dataPath)
 		url = Collada.dataPath + url;
 	req.open("get", url, true);
 	req.send();
