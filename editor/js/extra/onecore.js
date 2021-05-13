@@ -22232,7 +22232,7 @@ if(typeof(LiteGraph) != "undefined")
 
 	LGraphComponent.prototype.onGetInputs = function()
 	{ 
-		var inputs = [["Node",0],["Component",0],null];
+		var inputs = [["Node",0],["Component",0],["Trigger",LiteGraph.ACTION],null];
 
 		this.getComponentProperties("input", inputs);
 
@@ -40786,7 +40786,7 @@ function SkinDeformer( o )
 		SkinDeformer.num_supported_uniforms = gl.getParameter( gl.MAX_VERTEX_UNIFORM_VECTORS );
 		SkinDeformer.num_supported_textures = gl.getParameter( gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS );
 		//check if GPU skinning is supported
-		if( SkinDeformer.num_supported_uniforms < SkinDeformer.MAX_BONES*3 && SkinDeformer.num_supported_textures == 0)
+		if( SkinDeformer.num_supported_uniforms < SkinDeformer.MAX_UNIFORM_BONES*3 && SkinDeformer.num_supported_textures == 0)
 			SkinDeformer.gpu_skinning_supported = false;
 		SkinDeformer._initialized = true;
 	}
@@ -40799,8 +40799,8 @@ function SkinDeformer( o )
 
 SkinDeformer.icon = "mini-icon-stickman.png";
 
-SkinDeformer.MAX_BONES = 64;
-SkinDeformer.MAX_TEXTURE_BONES = 128; //do not change this, hardcoded in the shader
+SkinDeformer.MAX_UNIFORM_BONES = 64;
+SkinDeformer.MAX_TEXTURE_BONES = 256; //do not change this, hardcoded in the shader
 SkinDeformer.gpu_skinning_supported = true;
 SkinDeformer.icon = "mini-icon-stickman.png";
 SkinDeformer.apply_to_normals_by_software = false;
@@ -41000,7 +41000,7 @@ SkinDeformer.prototype.applySkinning = function(RI)
 		}
 
 		//can we pass the bones as a uniform?
-		if( SkinDeformer.num_supported_uniforms >= bones_size )
+		if( SkinDeformer.num_supported_uniforms >= bones_size && bones.length < SkinDeformer.MAX_UNIFORM_BONES )
 		{
 			//upload the bones as uniform (faster but doesnt work in all GPUs)
 			RI.uniforms["u_bones"] = u_bones;
@@ -41260,7 +41260,7 @@ ONE.SkinDeformer = SkinDeformer;
 SkinDeformer.skinning_shader_code = "\n\
 	//Skinning ******************* \n\
 	#ifndef MAX_BONES\n\
-		#define MAX_BONES 64\n\
+		#define MAX_BONES "+SkinDeformer.MAX_UNIFORM_BONES+"\n\
 	#endif\n\
 	#ifdef USE_SKINNING_TEXTURE\n\
 		uniform sampler2D u_bones;\n\
@@ -41273,7 +41273,7 @@ SkinDeformer.skinning_shader_code = "\n\
 	void getMat(int id, inout mat4 m) {\n\
 	\n\
 		#ifdef USE_SKINNING_TEXTURE\n\
-			float i_max_texture_bones_offset = 1.0 / (128.0 * 3.0);\n\
+			float i_max_texture_bones_offset = 1.0 / ("+SkinDeformer.MAX_TEXTURE_BONES+".0 * 3.0);\n\
 			m[0] = texture2D( u_bones, vec2( 0.0, (float(id*3)+0.5) * i_max_texture_bones_offset ) ); \n\
 			m[1] = texture2D( u_bones, vec2( 0.0, (float(id*3+1)+0.5) * i_max_texture_bones_offset ) );\n\
 			m[2] = texture2D( u_bones, vec2( 0.0, (float(id*3+2)+0.5) * i_max_texture_bones_offset ) );\n\
@@ -54783,7 +54783,7 @@ global.Collada = _collada = {
 			if(!data)
 				callback( null );
 			else
-				callback( Collada.parse( data ) );
+				callback( Collada.parse( data ), url );
 		});
 	},
 
@@ -57759,7 +57759,7 @@ function request(url, callback)
 		if(callback)
 			callback(this.response);
 	};
-	if(url.indexOf("://") == -1)
+	if(url.indexOf("://") == -1 && Collada.dataPath)
 		url = Collada.dataPath + url;
 	req.open("get", url, true);
 	req.send();

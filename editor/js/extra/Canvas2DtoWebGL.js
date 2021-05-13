@@ -1091,6 +1091,7 @@ function enableWebGLCanvas( canvas, options )
 		num = Math.ceil(radius*2*this._matrix[0]+1);
 		if(num<1)
 			return;
+		num = Math.min(num, 1024); //clamp it or bad things can happend
 
 		start_ang = start_ang === undefined ? 0 : start_ang;
 		end_ang = end_ang === undefined ? Math.PI * 2 : end_ang;
@@ -1139,12 +1140,16 @@ function enableWebGLCanvas( canvas, options )
 	ctx.clearRect = function(x,y,w,h)
 	{
 		if(x != 0 || y != 0 || w != canvas.width || h != canvas.height )
+		{
+			gl.enable( gl.SCISSOR_TEST );
 			gl.scissor(x,y,w,h);
+		}
 
 		//gl.clearColor( 0.0,0.0,0.0,0.0 );
 		gl.clear( gl.COLOR_BUFFER_BIT );
 		var v = gl.viewport_data;
 		gl.scissor(v[0],v[1],v[2],v[3]);
+		gl.disable( gl.SCISSOR_TEST );
 	}
 
 	ctx.fillCircle = function(x,y,r)
@@ -1304,6 +1309,7 @@ function enableWebGLCanvas( canvas, options )
 		var spacing = point_size * info.spacing / info.char_size - 1 ;
 		var kernings = info.kernings;
 		var scale_factor = info.font_size / this._font_size;
+		var is_first_char = true;
 
 		var vertices_index = 0, coords_index = 0;
 		
@@ -1316,7 +1322,8 @@ function enableWebGLCanvas( canvas, options )
 				if(text.charCodeAt(i) == 10) //break line
 				{
 					x = 0;
-					y -= point_size;
+					y += point_size;
+					is_first_char = true;
 				}
 				else
 					x += point_size * 0.5;
@@ -1324,9 +1331,11 @@ function enableWebGLCanvas( canvas, options )
 			}
 
 			var kern = kernings[ text[i] ];
-			if(i == 0)
+			if(is_first_char)
+			{
 				x -= point_size * kern["nwidth"] * 0.25;
-
+				is_first_char = false;
+			}
 
 			points[vertices_index+0] = startx + x + point_size * 0.5;
 			points[vertices_index+1] = starty + y - point_size * 0.25;

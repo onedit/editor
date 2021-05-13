@@ -4449,7 +4449,7 @@ LGraphNode.prototype.executeAction = function(action)
         element.addEventListener("wheel", this._binded_mouse_callback, false);
     };
 
-    DragAndScale.prototype.computeVisibleArea = function() {
+    DragAndScale.prototype.computeVisibleArea = function( viewport ) {
         if (!this.element) {
             this.visible_area[0] = this.visible_area[1] = this.visible_area[2] = this.visible_area[3] = 0;
             return;
@@ -4458,6 +4458,13 @@ LGraphNode.prototype.executeAction = function(action)
         var height = this.element.height;
         var startx = -this.offset[0];
         var starty = -this.offset[1];
+		if( viewport )
+		{
+			startx += viewport[0] / this.scale;
+			starty += viewport[1] / this.scale;
+			width = viewport[2];
+			height = viewport[3];
+		}
         var endx = startx + width / this.scale;
         var endy = starty + height / this.scale;
         this.visible_area[0] = startx;
@@ -4642,7 +4649,7 @@ LGraphNode.prototype.executeAction = function(action)
      * @constructor
      * @param {HTMLCanvas} canvas the canvas where you want to render (it accepts a selector in string format or the canvas element itself)
      * @param {LGraph} graph [optional]
-     * @param {Object} options [optional] { skip_rendering, autoresize }
+     * @param {Object} options [optional] { skip_rendering, autoresize, viewport }
      */
     function LGraphCanvas(canvas, graph, options) {
         options = options || {};
@@ -4685,6 +4692,7 @@ LGraphNode.prototype.executeAction = function(action)
         this.allow_interaction = true; //allow to control widgets, buttons, collapse, etc
         this.allow_searchbox = true;
         this.allow_reconnect_links = false; //allows to change a connection with having to redo it again
+		this.align_to_grid = false; //snap to grid
 
         this.drag_mode = false;
         this.dragging_rectangle = null;
@@ -4735,6 +4743,8 @@ LGraphNode.prototype.executeAction = function(action)
         this.last_mouse_position = [0, 0];
         this.visible_area = this.ds.visible_area;
         this.visible_links = [];
+
+		this.viewport = options.viewport || null; //to constraint render area to a portion of the canvas
 
         //link canvas and graph
         if (graph) {
@@ -5975,7 +5985,7 @@ LGraphNode.prototype.executeAction = function(action)
                 this.dirty_bgcanvas = true;
                 this.node_dragged.pos[0] = Math.round(this.node_dragged.pos[0]);
                 this.node_dragged.pos[1] = Math.round(this.node_dragged.pos[1]);
-                if (this.graph.config.align_to_grid) {
+                if (this.graph.config.align_to_grid || this.align_to_grid ) {
                     this.node_dragged.alignToGrid();
                 }
 				if( this.onNodeMoved )
@@ -6756,7 +6766,7 @@ LGraphNode.prototype.executeAction = function(action)
         this.last_draw_time = now;
 
         if (this.graph) {
-            this.ds.computeVisibleArea();
+            this.ds.computeVisibleArea(this.viewport);
         }
 
         if (
@@ -6805,22 +6815,21 @@ LGraphNode.prototype.executeAction = function(action)
         ctx.setTransform(1, 0, 0, 1, 0, 0);
 
         //clip dirty area if there is one, otherwise work in full canvas
-        if (this.dirty_area) {
+		var area = this.viewport || this.dirty_area;
+        if (area) {
             ctx.save();
             ctx.beginPath();
-            ctx.rect(
-                this.dirty_area[0],
-                this.dirty_area[1],
-                this.dirty_area[2],
-                this.dirty_area[3]
-            );
+            ctx.rect( area[0],area[1],area[2],area[3] );
             ctx.clip();
         }
 
         //clear
         //canvas.width = canvas.width;
         if (this.clear_background) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+			if(area)
+	            ctx.clearRect( area[0],area[1],area[2],area[3] );
+			else
+	            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         //draw bg canvas
@@ -6837,7 +6846,7 @@ LGraphNode.prototype.executeAction = function(action)
 
         //info widget
         if (this.show_info) {
-            this.renderInfo(ctx);
+            this.renderInfo(ctx, area ? area[0] : 0, area ? area[1] : 0 );
         }
 
         if (this.graph) {
@@ -6980,9 +6989,8 @@ LGraphNode.prototype.executeAction = function(action)
             this.onDrawOverlay(ctx);
         }
 
-        if (this.dirty_area) {
+        if (area) {
             ctx.restore();
-            //this.dirty_area = null;
         }
 
         if (ctx.finish2D) {
@@ -7178,11 +7186,14 @@ LGraphNode.prototype.executeAction = function(action)
             ctx.start();
         }
 
+		var viewport = this.viewport || [0,0,ctx.canvas.width,ctx.canvas.height];
+
         //clear
         if (this.clear_background) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect( viewport[0], viewport[1], viewport[2], viewport[3] );
         }
 
+		//show subgraph stack header
         if (this._graph_stack && this._graph_stack.length) {
             ctx.save();
             var parent_graph = this._graph_stack[this._graph_stack.length - 1];

@@ -5,7 +5,7 @@
 
 (function(global){
 
-var GL = global.GL = {};
+var GL = global.GL = global.LiteGL = {};
 
 if(typeof(glMatrix) == "undefined")
 	throw("litegl.js requires gl-matrix to work. It must be included before litegl.");
@@ -231,51 +231,25 @@ global.isPowerOfTwo = GL.isPowerOfTwo = function isPowerOfTwo(v)
 }
 
 /**
-* Tells if one number is power of two (used for textures)
-* @method isPowerOfTwo
+* Tells you the closest POT size (it rounds, so 257 will give 256, while 511 will give 512)
+* @method nearestPowerOfTwo
 * @param {v} number
-* @return {boolean}
+* @return {number}
 */
 global.nearestPowerOfTwo = GL.nearestPowerOfTwo = function nearestPowerOfTwo(v)
 {
 	return Math.pow(2, Math.round( Math.log( v ) / Math.log(2) ) )
 }
 
-
 /**
-* converts from polar to cartesian
-* @method polarToCartesian
-* @param {vec3} out
-* @param {number} azimuth orientation from 0 to 2PI
-* @param {number} inclianation from -PI to PI
-* @param {number} radius
-* @return {vec3} returns out
+* Tells you the closest POT size (it ceils, so 256 will giev 256, but 257 will give 512)
+* @method nextPowerOfTwo
+* @param {v} number
+* @return {number}
 */
-global.polarToCartesian = function( out, azimuth, inclination, radius )
+global.nextPowerOfTwo = GL.nextPowerOfTwo = function nextPowerOfTwo(v)
 {
-	out = out || vec3.create();
-	out[0] = radius * Math.sin(inclination) * Math.cos(azimuth);
-	out[1] = radius * Math.cos(inclination);
-	out[2] = radius * Math.sin(inclination) * Math.sin(azimuth);
-	return out;
-}
-
-/**
-* converts from cartesian to polar
-* @method cartesianToPolar
-* @param {vec3} out
-* @param {number} x
-* @param {number} y
-* @param {number} z
-* @return {vec3} returns [azimuth,inclination,radius]
-*/
-global.cartesianToPolar = function( out, x,y,z )
-{
-	out = out || vec3.create();
-	out[2] = Math.sqrt(x*x+y*y+z*z);
-	out[0] = Math.atan2(x,z);
-	out[1] = Math.acos(z/out[2]);
-	return out;
+	return Math.pow(2, Math.ceil( Math.log( v ) / Math.log(2) ) )
 }
 
 //Global Scope
@@ -1694,7 +1668,32 @@ vec3.random = function(vec, scale)
 	return vec;
 }
 
-//converts a polar coordinate (radius, lat, long) to (x,y,z)
+/**
+* converts from cartesian to polar
+* @method cartesianToPolar
+* @param {vec3} out
+* @param {vec3} v
+* @return {vec3} returns [radius,inclination,azimuth]
+*/
+vec3.cartesianToPolar = function( out, v )
+{
+	out = out || vec3.create();
+	var x = v[0];
+	var y = v[1];
+	var z = v[2];
+	out[0] = Math.sqrt(x*x+y*y+z*z); //radius
+	out[1] = Math.asin(y/out[0]); //inclination
+	out[2] = Math.atan2(x,z); //azimuth
+	return out;
+}
+
+/**
+* converts from polar to cartesian
+* @method polarToCartesian
+* @param {vec3} out
+* @param {vec3} v [r,lat,long] or [radius,inclination,azimuth]
+* @return {vec3} returns out
+*/
 vec3.polarToCartesian = function(out, v)
 {
 	var r = v[0];
@@ -1706,6 +1705,14 @@ vec3.polarToCartesian = function(out, v)
 	return out;
 }
 
+/**
+* reflects a vector over a normal
+* @method reflect
+* @param {vec3} out
+* @param {vec3} v
+* @param {vec3} n
+* @return {vec3} reflected vector
+*/
 vec3.reflect = function(out, v, n)
 {
 	var x = v[0]; var y = v[1]; var z = v[2];
@@ -5817,12 +5824,14 @@ Texture.prototype.computeInternalFormat = function()
 				console.warn("webgl 1 does not use HALF_FLOAT, converting to HALF_FLOAT_OES")
 				this.type = GL.HALF_FLOAT_OES;
 			}
+			/*
 			else if( this.type == GL.FLOAT )
 			{
 				//if(gl.extensions.WEBGL_color_buffer_float)
 				//	this.internalFormat = this.format == GL.RGB ? gl.extensions.WEBGL_color_buffer_float.RGB32F_EXT : gl.extensions.WEBGL_color_buffer_float.RGBA32F_EXT;
 				//this.internalFormat = this.format == GL.RGB ? GL.RGB32F : GL.RGBA32F;
 			}
+			*/
 		}
 	}
 }
@@ -5998,11 +6007,22 @@ Texture.prototype.uploadImage = function( image, options )
 	Texture.setUploadOptions(options, gl);
 
 	try {
-		gl.texImage2D( gl.TEXTURE_2D, 0, this.format, this.format, this.type, image );
-		this.width = image.videoWidth || image.width;
-		this.height = image.videoHeight || image.height;
+		if(options && options.subimage) //upload partially
+		{
+			if(gl.webgl_version == 1)
+				gl.texSubImage2D( gl.TEXTURE_2D, 0, 0,0, this.format, this.type, image );
+			else
+				gl.texSubImage2D( gl.TEXTURE_2D, 0, 0,0,image.videoWidth || image.width, image.videoHeight || image.height, this.format, this.type, image );
+		}
+		else
+		{
+			gl.texImage2D( gl.TEXTURE_2D, 0, this.format, this.format, this.type, image );
+			this.width = image.videoWidth || image.width;
+			this.height = image.videoHeight || image.height;
+		}
 		this.data = image;
 	} catch (e) {
+		console.error(e);
 		if (location.protocol == 'file:') {
 			throw 'image not loaded for security reasons (serve this page over "http://" instead)';
 		} else {
@@ -7628,10 +7648,8 @@ Texture.blend = function( a, b, factor, out )
 
 Texture.cubemapToTexture2D = function( cubemap_texture, size, target_texture, keep_type, yaw )
 {
-	if(!cubemap_texture || cubemap_texture.texture_type != gl.TEXTURE_CUBE_MAP) {
+	if(!cubemap_texture || cubemap_texture.texture_type != gl.TEXTURE_CUBE_MAP)
 		throw("No cubemap in convert");
-		return null;
-	}
 
 	size = size || cubemap_texture.width;
 	var type = keep_type ? cubemap_texture.type : gl.UNSIGNED_BYTE;
@@ -8264,11 +8282,9 @@ global.Shader = GL.Shader = function Shader( vertexSource, fragmentSource, macro
 
 	gl.attachShader( this.program, vs, gl );
 	gl.attachShader( this.program, fs, gl );
-	gl.linkProgram(this.program);
-	if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-		throw 'link error: ' + gl.getProgramInfoLog(this.program);
-	}
+	gl.linkProgram( this.program );
 
+	//store shaders separated
 	this.vs_shader = vs;
 	this.fs_shader = fs;
 
@@ -8277,9 +8293,13 @@ global.Shader = GL.Shader = function Shader( vertexSource, fragmentSource, macro
 	this.uniformInfo = {};
 	this.samplers = {};
 
-	//extract info about the shader to speed up future processes
-	this.extractShaderInfo();
+	if( !Shader.use_async )
+		this.checkLink();
+	else
+		this._first_use = true;
 }
+
+Shader.use_async = true; //https://toji.github.io/shader-perf/
 
 Shader.expandMacros = function(macros)
 {
@@ -8317,9 +8337,6 @@ Shader.compileSource = function( type, source, gl, shader )
 	shader = shader || gl.createShader(type);
 	gl.shaderSource(shader, source);
 	gl.compileShader(shader);
-	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-		throw (type == gl.VERTEX_SHADER ? "Vertex" : "Fragment") + ' shader compile error: ' + gl.getShaderInfoLog(shader);
-	}
 	return shader;
 }
 
@@ -8373,9 +8390,6 @@ Shader.prototype.updateShader = function( vertexSource, fragmentSource, macros )
 	gl.attachShader( this.program, vs, gl );
 	gl.attachShader( this.program, fs, gl );
 	gl.linkProgram( this.program );
-	if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-		throw 'link error: ' + gl.getProgramInfoLog( this.program );
-	}
 
 	//store shaders separated
 	this.vs_shader = vs;
@@ -8386,8 +8400,10 @@ Shader.prototype.updateShader = function( vertexSource, fragmentSource, macros )
 	this.uniformInfo = {};
 	this.samplers = {};
 
-	//extract info about the shader to speed up future processes
-	this.extractShaderInfo();
+	if( !Shader.use_async )
+		this.checkLink();
+	else
+		this._first_use = true;
 }
 
 /**
@@ -8593,6 +8609,23 @@ Shader.fromURL = function( vs_path, fs_path, on_complete )
 	return shader;
 }
 
+//check if shader works
+Shader.prototype.checkLink = function()
+{
+	this._first_use = false;
+
+	if (!gl.getShaderParameter(this.vs_shader, gl.COMPILE_STATUS)) {
+		throw "Vertex shader compile error: " + gl.getShaderInfoLog(this.vs_shader);
+	}
+	if (!gl.getShaderParameter(this.fs_shader, gl.COMPILE_STATUS)) {
+		throw "Fragment shader compile error: " + gl.getShaderInfoLog(this.fs_shader);
+	}
+	if (!gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
+		throw 'link error: ' + gl.getProgramInfoLog( this.program );
+	}
+	this.extractShaderInfo();
+}
+
 /**
 * enables the shader (calls useProgram)
 * @method bind
@@ -8600,6 +8633,13 @@ Shader.fromURL = function( vs_path, fs_path, on_complete )
 Shader.prototype.bind = function()
 {
 	var gl = this.gl;
+
+	if(Shader.use_async && this._first_use )
+	{
+		this.checkLink();
+		this._first_use = false;
+	}
+
 	gl.useProgram( this.program );
 	gl._current_shader = this;
 }
@@ -8627,6 +8667,8 @@ Shader._temp_uniform = new Float32Array(16);
 
 Shader.prototype.uniforms = function(uniforms) {
 	var gl = this.gl;
+	if(this._first_use)
+		this.checkLink();
 	gl.useProgram(this.program);
 	gl._current_shader = this;
 
@@ -8645,6 +8687,8 @@ Shader.prototype.uniforms = function(uniforms) {
 
 Shader.prototype.uniformsArray = function(array) {
 	var gl = this.gl;
+	if(this._first_use)
+		this.checkLink();
 	gl.useProgram( this.program );
 	gl._current_shader = this;
 
@@ -8700,6 +8744,9 @@ Shader.prototype._setUniform = (function(){
 
 	return (function(name, value)
 	{
+		if(this._first_use)
+			this.checkLink();
+
 		var info = this.uniformInfo[ name ];
 		if (!info)
 			return;
@@ -13029,14 +13076,14 @@ global.Ray = GL.Ray = function Ray( origin, direction )
 Ray.prototype.testPlane = function( P, N )
 {
 	var r = geo.testRayPlane( this.origin, this.direction, P, N, this.collision_point );
-	r.t = geo.last_t;
+	this.t = geo.last_t;
 	return r;
 }
 
 Ray.prototype.testSphere = function( center, radius, max_dist )
 {
 	var r = geo.testRaySphere( this.origin, this.direction, center, radius, this.collision_point, max_dist );
-	r.t = geo.last_t;
+	this.t = geo.last_t;
 	return r;
 }
 
@@ -13044,7 +13091,7 @@ Ray.prototype.testSphere = function( center, radius, max_dist )
 Ray.prototype.testBBox = function( bbox, max_dist, model, in_local )
 {
 	var r = geo.testRayBBox( this.origin, this.direction, bbox, model, this.collision_point, max_dist, in_local );
-	r.t = geo.last_t;
+	this.t = geo.last_t;
 	return r;
 }
 
