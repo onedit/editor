@@ -4332,14 +4332,22 @@ Mesh.fromURL = function(url, on_complete, gl, options)
 {
 	options = options || {};
 	gl = gl || global.gl;
-	
-	var mesh = new GL.Mesh(undefined,undefined,undefined,gl);
-	mesh.ready = false;
 
 	var pos = url.lastIndexOf(".");
 	var extension = url.substr(pos+1).toLowerCase();
 	if(options.extension)
 		extension = options.extension;
+
+	var parser = GL.Mesh.parsers[ extension.toLowerCase() ];
+	if(!parser)
+	{
+		console.error("No parser available in litegl to parse mesh of type",extension);
+		return null;
+	}
+
+	var mesh = new GL.Mesh(undefined,undefined,undefined,gl);
+	mesh.ready = false;
+
 	options.binary = Mesh.binary_file_formats[ extension ];
 
 	HttpRequest( url, null, function(data) {
@@ -8826,6 +8834,8 @@ Shader.prototype.drawBuffers = function( vertexBuffers, indexBuffer, mode, range
 
 	var gl = this.gl;
 
+	if(this._first_use)
+		this.checkLink();
 	gl.useProgram(this.program); //this could be removed assuming every shader is called with some uniforms 
 
 	// enable attributes as necessary.
@@ -8904,6 +8914,8 @@ Shader.prototype.drawInstanced = function( mesh, primitive, indices, instanced_u
 	if( gl.webgl_version == 1 && !gl.extensions.ANGLE_instanced_arrays )
 		throw("instancing not supported");
 
+	if(this._first_use)
+		this.checkLink();
 	gl.useProgram(this.program); //this could be removed assuming every shader is called with some uniforms 
 
 	// enable attributes as necessary.
@@ -9378,6 +9390,7 @@ Shader.createFX = function(code, uniforms, shader)
 {
 	//remove comments
 	code = GL.Shader.removeComments( code, true ); //remove comments and breaklines to avoid problems with the macros
+	uniforms = GL.Shader.removeComments( uniforms, true ); //remove comments and breaklines to avoid problems with the macros
 	var macros = {
 		FX_CODE: code,
 		FX_UNIFORMS: uniforms || ""
@@ -10356,7 +10369,8 @@ GL.create = function(options) {
 		e.eventType = e.type; //type cannot be overwritten, so I make a clone to allow me to overwrite
 
 		var target_element = e.target.nodeName.toLowerCase();
-		if(target_element === "input" || target_element === "textarea" || target_element === "select")
+		if( target_element === "input" || target_element === "textarea" || 
+			target_element === "select" || e.target.contentEditable === "true" )
 			return;
 
 		e.character = String.fromCharCode(e.keyCode).toLowerCase();
@@ -10365,8 +10379,10 @@ GL.create = function(options) {
 		if(!key) //this key doesnt look like an special key
 			key = e.character;
 
+		var modified_key = e.altKey || e.ctrlKey || e.metaKey;
+
 		//regular key
-		if (!e.altKey && !e.ctrlKey && !e.metaKey) {
+		if (!modified_key) {
 			if (key) 
 				gl.keys[key] = e.type == "keydown";
 			prev_state = gl.keys[e.keyCode];
@@ -10374,7 +10390,7 @@ GL.create = function(options) {
 		}
 
 		//avoid repetition if key stays pressed
-		if(prev_state != gl.keys[e.keyCode])
+		if( prev_state != gl.keys[e.keyCode] || modified_key )
 		{
 			if(e.type == "keydown" && gl.onkeydown) 
 				gl.onkeydown(e);
@@ -10783,6 +10799,10 @@ GL.mapKeyCode = function(code)
 		17: 'CTRL',
 		27: 'ESCAPE',
 		32: 'SPACE',
+		33: 'PAGEUP',
+		34: 'PAGEDOWN',
+		35: 'END',
+		36: 'HOME',
 		37: 'LEFT',
 		38: 'UP',
 		39: 'RIGHT',
@@ -10811,6 +10831,12 @@ GL.augmentEvent = function(e, root_element)
 	e.canvasy = b.height - e.mousey;
 	e.deltax = 0;
 	e.deltay = 0;
+
+	if(document.pointerLockElement === root_element)
+	{
+		e.canvasx = e.mousex = b.width * 0.5;
+		e.canvasy = e.mousey = b.height * 0.5;
+	}
 	
 	if(e.type == "mousedown")
 	{

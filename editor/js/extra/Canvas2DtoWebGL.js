@@ -1,3 +1,5 @@
+"use strict"
+
 //replaces the Canvas2D functions by WebGL functions, the behaviour is not 100% the same but it kind of works in many cases
 //not all functions have been implemented
 
@@ -53,7 +55,6 @@ function enableWebGLCanvas( canvas, options )
 	var quad_mesh = GL.Mesh.getScreenQuad();
 	var circle_mesh = GL.Mesh.circle({size:1});
 	var extra_projection = mat4.create();
-	var stencil_enabled = false;
 	var anisotropic = options.anisotropic !== undefined ? options.anisotropic : 2;
 
 	var uniforms = {
@@ -72,8 +73,10 @@ function enableWebGLCanvas( canvas, options )
 	}
 
 	var vertex_shader = null;
+	var vertex_shader2 = null;
 	var	flat_shader = null;
 	var	texture_shader = null;
+	var	clip_texture_shader = null;
 	var flat_primitive_shader = null;
 	var textured_transform_shader = null;
 	var textured_primitive_shader = null;
@@ -142,7 +145,7 @@ function enableWebGLCanvas( canvas, options )
 				uniform mat4 u_projection;\n\
 			#endif\n\
 			void main() { \n\
-				vec3 pos = vec3(u_position + vec2(a_coord.x,1.0 - a_coord.y)  * u_size, 1.0);\n\
+				vec3 pos = vec3(u_position + vec2(a_coord.x,"+(options.no_flip?"":"1.0 - ")+" a_coord.y)  * u_size, 1.0);\n\
 				v_coord = a_coord; \n\
 				pos = u_transform * pos;\n\
 				pos.z = 0.0;\n\
@@ -181,6 +184,18 @@ function enableWebGLCanvas( canvas, options )
 				}\n\
 			", extra_macros );
 
+		clip_texture_shader = new GL.Shader(vertex_shader2,"\n\
+				precision highp float;\n\
+				varying vec2 v_coord;\n\
+				uniform vec4 u_color;\n\
+				uniform sampler2D u_texture;\n\
+				void main() {\n\
+					vec4 color = u_color * texture2D( u_texture, v_coord );\n\
+					if(color.a <= 0.0)\n\
+						discard;\n\
+					gl_FragColor = color;\n\
+				}\n\
+			", extra_macros );
 
 		flat_primitive_shader = new GL.Shader(vertex_shader,"\n\
 				precision highp float;\n\
@@ -219,7 +234,7 @@ function enableWebGLCanvas( canvas, options )
 					vec2 pos = (u_itransform * vec3( gl_FragCoord.s, u_viewport.y - gl_FragCoord.t,1.0)).xy;\n\
 					pos *= vec2( (u_viewport.x * u_texture_transform.z), (u_viewport.y * u_texture_transform.w) );\n\
 					vec2 uv = fract(pos / u_viewport) + u_texture_transform.xy;\n\
-					uv.y = 1.0 - uv.y;\n\
+					" + (options.no_flip ? "":"uv.y = 1.0 - uv.y;")+"\n\
 					gl_FragColor = u_color * texture2D( u_texture, uv);\n\
 				}\n\
 			", extra_macros );
@@ -291,7 +306,7 @@ function enableWebGLCanvas( canvas, options )
 				vec2 uv = vec2(1.0 - gl_PointCoord.s, gl_PointCoord.t);\n\
 				uv = vec2( ((uv.y - 0.5) * u_angle_sincos.y - (uv.x - 0.5) * u_angle_sincos.x) + 0.5, ((uv.x - 0.5) * u_angle_sincos.y + (uv.y - 0.5) * u_angle_sincos.x) + 0.5);\n\
 				uv = v_coord - uv * u_iCharSize + vec2(u_iCharSize*0.5);\n\
-				uv.y = 1.0 - uv.y;\n\
+				" + (options.no_flip ? "":"uv.y = 1.0 - uv.y;")+"\n\
 				gl_FragColor = vec4(u_color.xyz, u_color.a * texture2D(u_texture, uv, -1.0  ).a);\n\
 			}\n\
 			";
@@ -380,7 +395,8 @@ function enableWebGLCanvas( canvas, options )
 				fontFamily: "",
 				fontSize: 14,
 				fontMode: "",
-				textAlign: ""
+				textAlign: "",
+				clip_level: 0
 			};
 		}
 		else
@@ -397,6 +413,7 @@ function enableWebGLCanvas( canvas, options )
 		current_level.fontSize = this._font_size;
 		current_level.fontMode = this._font_mode;
 		current_level.textAlign = this.textAlign;
+		current_level.clip_level = this.clip_level;
 	}
 
 	ctx.restore = function() {
@@ -420,17 +437,76 @@ function enableWebGLCanvas( canvas, options )
 		this._font_size = current_level.fontSize;
 		this._font_mode = current_level.fontMode;
 		this.textAlign = current_level.textAlign;
+		var prev_clip_level = this.clip_level;
+		this.clip_level = current_level.clip_level;
 
 		global_angle = Math.atan2( this._matrix[3], this._matrix[4] ); //use up vector
 
-		if(	stencil_enabled )
+		if(	prev_clip_level == this.clip_level ) 
 		{
+			//nothing
+		}
+		else if( this.clip_level == 0 ) //exiting stencil mode
+		{
+			//clear and disable
 			gl.enable( gl.STENCIL_TEST );
 			gl.clearStencil( 0x0 );
 			gl.clear( gl.STENCIL_BUFFER_BIT );
 			gl.disable( gl.STENCIL_TEST );
-			stencil_enabled = false;
 		}
+		else //reduce clip level
+		{
+			gl.stencilFunc( gl.LEQUAL, this.clip_level, 0xFF ); //why LEQUAL?? should be GEQUAL but doesnt work
+			gl.stencilOp( gl.KEEP, gl.KEEP, gl.KEEP );
+		}
+	}
+	
+	ctx.clip = function()
+	{
+		//first one clears?
+		if( this.clip_level == 0 )
+		{
+			//??
+		}
+
+		this.clip_level++;
+
+		gl.colorMask(false, false, false, false);
+		gl.depthMask(false);
+		
+		//fill stencil buffer
+		gl.enable( gl.STENCIL_TEST );
+		//gl.stencilFunc( gl.ALWAYS, 1, 0xFF );
+		//gl.stencilOp( gl.KEEP, gl.KEEP, gl.REPLACE ); //TODO using INCR we could allow 8 stencils 
+		gl.stencilFunc( gl.EQUAL, this.clip_level - 1, 0xFF );
+		gl.stencilOp( gl.KEEP, gl.KEEP, gl.INCR );
+		
+		this.fill();
+
+		gl.colorMask(true, true, true, true);
+		gl.depthMask(true);
+		//gl.stencilFunc( gl.EQUAL, 1, 0xFF );
+		gl.stencilFunc( gl.EQUAL, this.clip_level, 0xFF );
+		gl.stencilOp( gl.KEEP, gl.KEEP, gl.KEEP );
+	}
+
+	ctx.clipImage = function(image,x,y,w,h)
+	{
+		this.clip_level++;
+
+		gl.colorMask(false, false, false, false);
+		gl.depthMask(false);
+		gl.enable( gl.STENCIL_TEST );
+		gl.stencilFunc( gl.EQUAL, this.clip_level - 1, 0xFF );
+		gl.stencilOp( gl.KEEP, gl.KEEP, gl.INCR );
+		
+		//draw image with discard
+		this.drawImage(image, x,y,w,h,clip_texture_shader);
+
+		gl.colorMask(true, true, true, true);
+		gl.depthMask(true);
+		gl.stencilFunc( gl.EQUAL, this.clip_level, 0xFF );
+		gl.stencilOp( gl.KEEP, gl.KEEP, gl.KEEP );
 	}
 
 	ctx.transform = function(a,b,c,d,e,f) {
@@ -487,7 +563,7 @@ function enableWebGLCanvas( canvas, options )
 					}
 					return tex;
 				}
-				return img.gl[ gl.context_id ] = GL.Texture.fromImage(img, { magFilter: gl.LINEAR, minFilter: gl.LINEAR_MIPMAP_LINEAR, wrap: wrap, ignore_pot:true, premultipliedAlpha: true, anisotropic: anisotropic } );
+				return img.gl[ gl.context_id ] = GL.Texture.fromImage(img, { magFilter: options.magFilter || GL.LINEAR, minFilter: options.minFilter || gl.LINEAR_MIPMAP_LINEAR, wrap: wrap, ignore_pot:true, premultipliedAlpha: true, anisotropic: anisotropic } );
 			}
 			else //probably a canvas
 			{
@@ -728,7 +804,7 @@ function enableWebGLCanvas( canvas, options )
 			return;
 
 		var last = [ global_vertices[ global_index - 3 ], global_vertices[ global_index - 2 ] ];
-		cp = [ last, [m1x, m1y], [m2x, m2y], [ex, ey] ];
+		var cp = [ last, [m1x, m1y], [m2x, m2y], [ex, ey] ];
 		for(var i = 0; i <= curveSubdivisions; i++)
 		{
 			var t = i/curveSubdivisions;
@@ -1026,69 +1102,116 @@ function enableWebGLCanvas( canvas, options )
 
 	ctx.roundRect = function (x, y, w, h, radius, radius_low)
 	{
-		if ( radius === undefined )
-			radius = 5;
+		var top_left_radius = 0;
+		var top_right_radius = 0;
+		var bottom_left_radius = 0;
+		var bottom_right_radius = 0;
+
+		if ( radius === 0 )
+		{
+			this.rect(x,y,w,h);
+			return;
+		}
+
 		if(radius_low === undefined)
-			radius_low  = radius;
+			radius_low = radius;
+
+		//make it compatible with official one
+		if(radius != null && radius.constructor === Array)
+		{
+			if(radius.length == 1)
+				top_left_radius = top_right_radius = bottom_left_radius = bottom_right_radius = radius[0];
+			else if(radius.length == 2)
+			{
+				top_left_radius = bottom_right_radius = radius[0];
+				top_right_radius = bottom_left_radius = radius[1];
+			}
+			else if(radius.length == 4)
+			{
+				top_left_radius = radius[0];
+				top_right_radius = radius[1];
+				bottom_left_radius = radius[2];
+				bottom_right_radius = radius[3];
+			}
+			else
+				return;
+		}
+		else //old using numbers
+		{
+			top_left_radius = radius || 0;
+			top_right_radius = radius || 0;
+			bottom_left_radius = radius_low || 0;
+			bottom_right_radius = radius_low || 0;
+		}
+
 		var gv = global_vertices;
 		var gi = global_index;
 
+		//topleft
+		if(top_left_radius > 0)
 		for(var i = 0; i < 10; ++i)
 		{
 			var ang = (i/10)*Math.PI*0.5;
-			gv[ gi ] = x+radius*(1.0 - Math.cos(ang));
-			gv[ gi + 1] = y+radius*(1.0 - Math.sin(ang));
+			gv[ gi ] = x+top_left_radius*(1.0 - Math.cos(ang));
+			gv[ gi + 1] = y+top_left_radius*(1.0 - Math.sin(ang));
 			gv[ gi + 2] = 1;
 			gi += 3;
 		}
 
-		gv[ gi + 0] = x+radius; gv[ gi + 1] = y; gv[ gi + 2] = 1;
-		gv[ gi + 3] = x+w-radius; gv[ gi + 4] = y; gv[ gi + 5] = 1;
+		gv[ gi + 0] = x+top_left_radius; gv[ gi + 1] = y; gv[ gi + 2] = 1;
+		gv[ gi + 3] = x+w-top_right_radius; gv[ gi + 4] = y; gv[ gi + 5] = 1;
 		gi += 6;
 
+		//top right
+		if(top_right_radius > 0)
 		for(var i = 0; i < 10; ++i)
 		{
 			var ang = (i/10)*Math.PI*0.5;
-			gv[ gi + 0] = x+w-radius*(1.0 - Math.sin(ang));
-			gv[ gi + 1] = y+radius*(1.0 - Math.cos(ang));
+			gv[ gi + 0] = x+w-top_right_radius*(1.0 - Math.sin(ang));
+			gv[ gi + 1] = y+top_right_radius*(1.0 - Math.cos(ang));
 			gv[ gi + 2] = 1;
 			gi += 3;
 		}
 
-		gv[ gi + 0] = x+w; gv[ gi + 1] = y+radius; gv[ gi + 2] = 1;
-		gv[ gi + 3] = x+w; gv[ gi + 4] = y+h-radius_low; gv[ gi + 5] = 1;
+		gv[ gi + 0] = x+w; gv[ gi + 1] = y+top_right_radius; gv[ gi + 2] = 1;
+		gv[ gi + 3] = x+w; gv[ gi + 4] = y+h-bottom_right_radius; gv[ gi + 5] = 1;
 		gi += 6;
 
+		//bottom right
+		if(bottom_right_radius > 0)
 		for(var i = 0; i < 10; ++i)
 		{
 			var ang = (i/10)*Math.PI*0.5;
-			gv[ gi + 0] = x+w-radius_low*(1.0 - Math.cos(ang));
-			gv[ gi + 1] = y+h-radius_low*(1.0 - Math.sin(ang));
+			gv[ gi + 0] = x+w-bottom_right_radius*(1.0 - Math.cos(ang));
+			gv[ gi + 1] = y+h-bottom_right_radius*(1.0 - Math.sin(ang));
 			gv[ gi + 2] = 1;
 			gi += 3;
 		}
 
-		gv[ gi + 0] = x+w-radius_low; gv[ gi + 1] = y+h; gv[ gi + 2] = 1;
-		gv[ gi + 3] = x+radius_low; gv[ gi + 4] = y+h; gv[ gi + 5] = 1;
+		gv[ gi + 0] = x+w-bottom_right_radius; gv[ gi + 1] = y+h; gv[ gi + 2] = 1;
+		gv[ gi + 3] = x+bottom_left_radius; gv[ gi + 4] = y+h; gv[ gi + 5] = 1;
 		gi += 6;
 
+		//bottom right
+		if(bottom_left_radius > 0)
 		for(var i = 0; i < 10; ++i)
 		{
 			var ang = (i/10)*Math.PI*0.5;
-			gv[ gi + 0] = x+radius_low*(1.0 - Math.sin(ang));
-			gv[ gi + 1] = y+h-radius_low*(1.0 - Math.cos(ang));
+			gv[ gi + 0] = x+bottom_left_radius*(1.0 - Math.sin(ang));
+			gv[ gi + 1] = y+h-bottom_left_radius*(1.0 - Math.cos(ang));
 			gv[ gi + 2] = 1;
 			gi += 3;
 		}
 
-		gv[ gi + 0] = x; gv[ gi + 1] = y+radius; gv[ gi + 2] = 1;
+		gv[ gi + 0] = x; gv[ gi + 1] = y+top_left_radius; gv[ gi + 2] = 1;
 		global_index = gi + 3;
 	}
 
 
 	ctx.arc = function(x,y,radius, start_ang, end_ang)
 	{
-		num = Math.ceil(radius*2*this._matrix[0]+1);
+		var scale = Math.max( Math.abs( this._matrix[0] ), Math.abs( this._matrix[1] ), Math.abs( this._matrix[3] ), Math.abs( this._matrix[4] ) );//the axis defining ones
+		var num = Math.ceil(radius*2*scale+1);
 		if(num<1)
 			return;
 		num = Math.min(num, 1024); //clamp it or bad things can happend
@@ -1175,24 +1298,6 @@ function enableWebGLCanvas( canvas, options )
 		flat_shader.uniforms(uniforms).draw(circle_mesh);
 		extra_projection[14] -= 0.001;
 	}
-	
-	ctx.clip = function()
-	{
-		gl.colorMask(false, false, false, false);
-		gl.depthMask(false);
-		
-		//fill stencil buffer
-		gl.enable( gl.STENCIL_TEST );
-		gl.stencilFunc( gl.ALWAYS, 1, 0xFF );
-		gl.stencilOp( gl.KEEP, gl.KEEP, gl.REPLACE ); //TODO using INCR we could allow 8 stencils 
-		
-		this.fill();
-
-		stencil_enabled = true;		
-		gl.colorMask(true, true, true, true);
-		gl.depthMask(true);
-		gl.stencilFunc( gl.EQUAL, 1, 0xFF );
-	}
 
 	//control funcs: used to set flags at the beginning and the end of the render
 	ctx.start2D = function()
@@ -1212,6 +1317,7 @@ function enableWebGLCanvas( canvas, options )
 		gl.lineWidth = 1;
 		global_index = 0;
 		mat4.identity( extra_projection );
+		this.clip_level = 0; //sure?
 	}
 
 	ctx.finish2D = function()
@@ -1570,7 +1676,10 @@ function enableWebGLCanvas( canvas, options )
 		set: function(v) { 
 			if(!v)
 				return;
-			this._fillcolor.set(v);
+			if( v.length < 5 )
+				this._fillcolor.set(v);
+			else
+				console.error("fillColor value has more than 4 components");
 		}
 	});
 
@@ -1579,7 +1688,10 @@ function enableWebGLCanvas( canvas, options )
 		set: function(v) { 
 			if(!v)
 				return;
-			this._strokecolor.set(v);
+			if( v.length < 5 )
+				this._strokecolor.set(v);
+			else
+				console.error("strokeColor value has more than 4 components");
 		}
 	});
 
@@ -1652,6 +1764,7 @@ function enableWebGLCanvas( canvas, options )
 		}
 	});
 
+	//define globals
 	ctx._fillcolor = vec4.fromValues(0,0,0,1);
 	ctx._strokecolor = vec4.fromValues(0,0,0,1);
 	ctx._shadowcolor = vec4.fromValues(0,0,0,0);
@@ -1663,6 +1776,7 @@ function enableWebGLCanvas( canvas, options )
 
 
 	//STATE
+	ctx.clip_level = 0;
 	ctx.strokeStyle = "rgba(0,0,0,1)";
 	ctx.fillStyle = "rgba(0,0,0,1)";
 	ctx.shadowColor = "transparent";
@@ -1686,3 +1800,5 @@ function enableWebGLCanvas( canvas, options )
 
 enableWebGLCanvas.useInternationalFont = false; //render as much characters as possible in the texture atlas
 enableWebGLCanvas.fontOffsetY = 0; //hack, some fonts need extra offsets, dont know why
+
+
