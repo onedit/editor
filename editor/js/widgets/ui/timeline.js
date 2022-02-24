@@ -465,7 +465,7 @@ Timeline.prototype.redrawCanvas = function()
 		var hover = Timeline.isInsideRect(this._prev_mouse,centerx-140,centery+10,280,46);
 		ctx.fillStyle = hover ? "#999" : "#444";
 		ctx.beginPath();
-		ctx.roundRect(-140,10,280,46,5);
+		ctx.roundRect(-140,10,280,46,[5]);
 		ctx.fill();
 		ctx.fillStyle = hover ? "white" : "#888";
 		ctx.fillText("Open Scene Anim", 0, 40);

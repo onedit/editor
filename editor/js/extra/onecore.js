@@ -59638,6 +59638,7 @@ var parserGLTF = {
 		}
 
 		//num numbers
+		var databuffer = null;
 		var size = accessor.count * components;
 
 		//create buffer
