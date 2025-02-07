@@ -631,7 +631,7 @@ var UndoModule = {
 			title: "Material modified: " + LS.getObjectClassName(material),
 			data: { material: material, mat_data: JSON.stringify( material.serialize() ) }, //stringify to save some space
 			callback_undo: function(d) {
-				d.new_mat_data = JSON.stringify( material.configure() );
+				d.new_mat_data = JSON.stringify( material.serialize() );
 				d.material.configure( JSON.parse(d.mat_data) );
 			},
 			callback_redo: function(d) {
